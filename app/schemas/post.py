@@ -1,11 +1,12 @@
 """
 Post 스키마 — 게시글 요청/응답 형태
 
-Phase 3: 상세 조회 응답에 images 포함
+Phase 3: images 포함
+명세서: 검색·페이징 응답 (total 포함)
 """
 
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -36,6 +37,14 @@ class PostResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None
     is_edited: bool | None
-    images: Optional[List[PostImageResponse]] = []  # Phase 3
+    images: Optional[List[PostImageResponse]] = []
 
     model_config = {"from_attributes": True}
+
+
+class PostListResponse(BaseModel):
+    """검색·페이징 목록 응답"""
+    items: List[PostResponse]
+    total: int
+    page: int
+    size: int

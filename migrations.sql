@@ -4,6 +4,11 @@
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user';
 
 -- ==========================================================
+-- 명세서: users 테이블에 deleted_at 추가 (소프트 딜리트)
+-- ==========================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+-- ==========================================================
 -- Phase 2: study_rooms 테이블에 description 추가
 -- ==========================================================
 ALTER TABLE study_rooms ADD COLUMN IF NOT EXISTS description TEXT;
@@ -61,25 +66,49 @@ CREATE TABLE IF NOT EXISTS applications (
 
 -- ==========================================================
 -- Phase 1 수정: reservations 테이블 구조 변경
--- reservation_time (단일 시각) → start_time + end_time (범위)
--- Phase 6: group_id 컬럼 추가 (study_groups 테이블 생성 후 실행)
--- 주의: 기존 데이터가 있으면 아래 UPDATE 구문으로 마이그레이션됩니다.
+-- reservation_time → start_time + end_time
+-- Phase 6: group_id 컬럼 추가 (study_groups 생성 후 실행)
 -- ==========================================================
-
--- 1) 새 컬럼 추가
 ALTER TABLE reservations ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
 ALTER TABLE reservations ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ;
 ALTER TABLE reservations ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES study_groups(id) ON DELETE SET NULL;
 
--- 2) 기존 reservation_time 데이터 마이그레이션 (1시간 단위 기본값으로 채움)
+-- 기존 reservation_time 데이터 마이그레이션
 UPDATE reservations
 SET start_time = reservation_time,
     end_time   = reservation_time + INTERVAL '1 hour'
 WHERE start_time IS NULL AND reservation_time IS NOT NULL;
 
--- 3) NOT NULL 제약 적용 (기존 데이터가 없으면 바로, 있으면 2번 실행 후)
 ALTER TABLE reservations ALTER COLUMN start_time SET NOT NULL;
 ALTER TABLE reservations ALTER COLUMN end_time SET NOT NULL;
 
--- 4) 기존 컬럼 제거 (선택 — 위 단계 모두 확인 후 실행)
+-- 기존 컬럼 제거 (확인 후 실행)
 -- ALTER TABLE reservations DROP COLUMN IF EXISTS reservation_time;
+
+-- ==========================================================
+-- 명세서: notifications 테이블 생성
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS notifications (
+    id         BIGSERIAL PRIMARY KEY,
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type       TEXT NOT NULL,          -- comment / reservation
+    message    TEXT NOT NULL,
+    related_id BIGINT,                 -- post_id 또는 reservation_id
+    is_read    BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ==========================================================
+-- 명세서: 탈퇴 30일 후 하드딜리트 — pg_cron 설정
+-- Supabase 대시보드 > Database > Extensions 에서 pg_cron 활성화 후 실행
+-- ==========================================================
+-- SELECT cron.schedule(
+--     'hard-delete-withdrawn-users',   -- 잡 이름
+--     '0 3 * * *',                      -- 매일 새벽 3시
+--     $$
+--     DELETE FROM users
+--     WHERE is_active = false
+--       AND deleted_at IS NOT NULL
+--       AND deleted_at < now() - INTERVAL '30 days';
+--     $$
+-- );

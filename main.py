@@ -2,17 +2,23 @@ from fastapi import FastAPI
 from app.routers import (
     auth,
     comments,
+    my,
+    notifications,
     post_images,
     posts,
     reservation_participants,
     reservations,
     rooms,
     study_groups,
+    users,
 )
 
 app = FastAPI(title="스터디 플랫폼 API")
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(my.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(posts.router, prefix="/api/v1")
 app.include_router(comments.router, prefix="/api/v1")
 app.include_router(post_images.router, prefix="/api/v1")

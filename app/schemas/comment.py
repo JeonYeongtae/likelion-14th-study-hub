@@ -11,6 +11,10 @@ class CommentCreate(BaseModel):
     parent_comment_id: int | None = None
 
 
+class CommentUpdate(BaseModel):
+    content: str
+
+
 class CommentResponse(BaseModel):
     id: int
     post_id: int
