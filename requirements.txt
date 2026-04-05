@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+python-dotenv
+pydantic-settings
+pydantic[email]
+# python-jose[cryptography]  — Session 2에서 JWT 인증 추가 시 활성화
+# passlib[bcrypt]             — Session 2에서 비밀번호 해싱 추가 시 활성화
