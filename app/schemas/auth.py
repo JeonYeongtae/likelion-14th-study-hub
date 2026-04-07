@@ -27,6 +27,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ReactivateRequest(BaseModel):
+    email: str
+    password: str
+
+
 class LoginResponse(BaseModel):
     """Phase 4: JWT 토큰 반환"""
     access_token: str
