@@ -13,7 +13,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import DeactivatedAccountError
-from app.core.jwt import create_access_token
+from app.core.jwt import create_access_token, create_refresh_token
 from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import LoginRequest, SignupRequest
@@ -66,8 +66,14 @@ def login(db: Session, request: LoginRequest):
             raise DeactivatedAccountError()
         raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다")
 
-    token = create_access_token(user.id, user.role)
-    return {"access_token": token, "token_type": "bearer", "user_id": user.id}
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id, user.role)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "refresh_token": refresh_token,  # 라우터에서 httpOnly 쿠키로 이동
+    }
 
 
 def withdraw(db: Session, user_id: int):
@@ -113,8 +119,14 @@ def reactivate(db: Session, email: str, password: str):
     user.deleted_at = None
     user_repo.update_user(db, user)
 
-    token = create_access_token(user.id, user.role)
-    return {"access_token": token, "token_type": "bearer", "user_id": user.id}
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id, user.role)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "refresh_token": refresh_token,  # 라우터에서 httpOnly 쿠키로 이동
+    }
 
 
 def _is_within_grace_period(deleted_at: datetime) -> bool:
