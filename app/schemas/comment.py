@@ -18,7 +18,9 @@ class CommentUpdate(BaseModel):
 class CommentResponse(BaseModel):
     id: int
     post_id: int
+    post_title: str = ""        # 댓글이 달린 게시글 제목
     user_id: int
+    nickname: str = ""          # 작성자 닉네임
     parent_comment_id: int | None
     content: str
     created_at: datetime

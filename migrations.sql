@@ -99,6 +99,34 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- ==========================================================
+-- Phase 6: chat_messages 테이블 생성
+-- 스터디 그룹 전용 채팅 메시지 저장
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id         BIGSERIAL PRIMARY KEY,
+    group_id   BIGINT NOT NULL REFERENCES study_groups(id) ON DELETE CASCADE,
+    sender_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 히스토리 조회 성능 최적화 (group별 최신순)
+CREATE INDEX IF NOT EXISTS idx_chat_messages_group_id ON chat_messages(group_id, id DESC);
+
+-- ==========================================================
+-- Phase 6: chat_read_receipts 테이블 생성
+-- 유저별 마지막 읽음 위치 추적 (미읽음 수 계산용)
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS chat_read_receipts (
+    id                    BIGSERIAL PRIMARY KEY,
+    group_id              BIGINT NOT NULL REFERENCES study_groups(id) ON DELETE CASCADE,
+    user_id               BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_read_message_id  BIGINT REFERENCES chat_messages(id) ON DELETE SET NULL,
+    updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(group_id, user_id)
+);
+
+-- ==========================================================
 -- 명세서: 탈퇴 30일 후 하드딜리트 — pg_cron 설정
 -- Supabase 대시보드 > Database > Extensions 에서 pg_cron 활성화 후 실행
 -- ==========================================================

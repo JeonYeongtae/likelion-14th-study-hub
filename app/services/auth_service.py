@@ -9,7 +9,7 @@ Phase 4: JWT 토큰 발급
 
 from datetime import datetime, timedelta, timezone
 
-from passlib.context import CryptContext
+import bcrypt
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import DeactivatedAccountError
@@ -18,7 +18,13 @@ from app.models.user import User
 from app.repositories import user_repo
 from app.schemas.auth import LoginRequest, SignupRequest
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def _verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 DEACTIVATION_GRACE_DAYS = 30
 
@@ -39,8 +45,10 @@ def signup(db: Session, request: SignupRequest):
 
     new_user = User(
         email=request.email,
-        password=pwd_context.hash(request.password),
+        password=_hash_password(request.password),
         nickname=request.nickname,
+        role="user",
+        is_active=True,
     )
     return user_repo.create_user(db, new_user)
 
@@ -58,7 +66,7 @@ def login(db: Session, request: LoginRequest):
     """
     user = user_repo.get_user_by_email(db, request.email)
 
-    if not user or not pwd_context.verify(request.password, user.password):
+    if not user or not _verify_password(request.password, user.password):
         raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다")
 
     if not user.is_active:
@@ -106,7 +114,7 @@ def reactivate(db: Session, email: str, password: str):
     """
     user = user_repo.get_user_by_email(db, email)
 
-    if not user or not pwd_context.verify(password, user.password):
+    if not user or not _verify_password(password, user.password):
         raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다")
 
     if user.is_active:

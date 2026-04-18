@@ -27,3 +27,9 @@ class ApplicationResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MyApplicationResponse(ApplicationResponse):
+    """마이페이지용 — 신청한 그룹 정보 포함"""
+    group_title: str
+    group_status: str

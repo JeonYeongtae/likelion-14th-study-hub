@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_optional_user
 from app.database import get_db
 from app.models.like import Like
 from app.repositories import like_repo
@@ -35,12 +35,24 @@ def get_posts(
 
 
 @router.get("/{post_id}", response_model=PostResponse)
-def get_post(post_id: int, db: Session = Depends(get_db)):
-    """게시글 상세 조회 (조회수 +1, 이미지 포함)"""
+def get_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_optional_user),
+):
+    """게시글 상세 조회 (조회수 +1, 이미지 포함, 좋아요 상태 포함)"""
     try:
-        return post_service.get_post(db, post_id)
+        post = post_service.get_post(db, post_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+    response = PostResponse.model_validate(post)
+    response.like_count = like_repo.get_like_count(db, post_id)
+    response.is_liked = (
+        like_repo.get_like(db, current_user.id, post_id) is not None
+        if current_user else False
+    )
+    return response
 
 
 @router.post("/", response_model=PostResponse)

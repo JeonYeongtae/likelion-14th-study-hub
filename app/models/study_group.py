@@ -28,3 +28,4 @@ class StudyGroup(Base):
     leader = relationship("User", back_populates="study_groups")
     applications = relationship("Application", back_populates="group")
     reservations = relationship("Reservation", back_populates="group")
+    chat_messages = relationship("ChatMessage", back_populates="group", cascade="all, delete-orphan")

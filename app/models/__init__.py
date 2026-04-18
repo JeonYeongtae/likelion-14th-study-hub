@@ -9,3 +9,5 @@ from app.models.reservation_participant import ReservationParticipant
 from app.models.post import Post
 from app.models.comment import Comment
 from app.models.like import Like
+from app.models.chat_message import ChatMessage
+from app.models.chat_read_receipt import ChatReadReceipt

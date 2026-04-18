@@ -6,6 +6,5 @@ python-dotenv
 pydantic-settings
 pydantic[email]
 python-jose[cryptography]
-passlib[bcrypt]
 supabase
 python-multipart

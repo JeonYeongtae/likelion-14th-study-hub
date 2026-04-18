@@ -3,6 +3,8 @@ Post Repository — 게시글 DB 조작
 """
 
 from sqlalchemy.orm import Session
+from app.models.comment import Comment
+from app.models.like import Like
 from app.models.post import Post
 from app.models.user import User
 
@@ -57,5 +59,13 @@ def update_post(db: Session, post: Post):
 
 
 def delete_post(db: Session, post: Post):
+    # 대댓글(자식) 먼저 삭제 → 부모 댓글 삭제 → 좋아요 삭제 → 게시글 삭제
+    # (parent_comment_id FK 제약 위반 방지)
+    db.query(Comment).filter(
+        Comment.post_id == post.id,
+        Comment.parent_comment_id.isnot(None),
+    ).delete(synchronize_session=False)
+    db.query(Comment).filter(Comment.post_id == post.id).delete(synchronize_session=False)
+    db.query(Like).filter(Like.post_id == post.id).delete(synchronize_session=False)
     db.delete(post)
     db.commit()

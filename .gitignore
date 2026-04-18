@@ -1,10 +1,115 @@
+# ===== 환경 변수 (보안 최우선) =====
 .env
+.env.local
+.env.development
+.env.test
+.env.staging
+.env.production
+.env.*
+*.env
+
+# ===== 인증서 / 키 파일 (절대 커밋 금지) =====
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+*.jks
+secrets/
+credentials/
+private/
+
+# ===== Python 캐시 =====
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ===== 가상 환경 =====
 venv/
 .venv/
-.claude/settings.json
-docs/
+env/
+.env/
+ENV/
+venv.bak/
+
+# ===== 빌드 / 패키징 =====
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+MANIFEST
+*.spec
+
+# ===== 데이터베이스 파일 (로컬 DB 절대 커밋 금지) =====
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# ===== 로그 =====
+*.log
+logs/
+log/
+
+# ===== 테스트 / 커버리지 =====
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.lcov
+nosetests.xml
+test-results/
+
+# ===== 타입 체커 / 린터 캐시 =====
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytype/
+
+# ===== 업로드 / 미디어 (사용자 데이터) =====
+uploads/
+media/
+static/uploads/
+
+# ===== Jupyter =====
+.ipynb_checkpoints
+*.ipynb
+
+# ===== OS 생성 파일 =====
 .DS_Store
-.omx/
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===== 에디터 =====
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# ===== Claude / AI 도구 =====
 .claude/
+
+# ===== 기타 =====
+.omx/
+docs/
+*.bak
+*.tmp

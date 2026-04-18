@@ -18,6 +18,16 @@ def get_group_by_id(db: Session, group_id: int):
     return db.query(StudyGroup).filter(StudyGroup.id == group_id).first()
 
 
+def get_groups_by_leader(db: Session, leader_id: int):
+    """조장이 만든 그룹 목록 (최신순)"""
+    return (
+        db.query(StudyGroup)
+        .filter(StudyGroup.leader_id == leader_id)
+        .order_by(StudyGroup.created_at.desc())
+        .all()
+    )
+
+
 def create_group(db: Session, group: StudyGroup):
     """스터디 그룹 생성"""
     db.add(group)

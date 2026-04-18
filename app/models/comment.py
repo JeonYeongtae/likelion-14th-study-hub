@@ -26,3 +26,8 @@ class Comment(Base):
     user = relationship("User", back_populates="comments")
     replies = relationship("Comment", back_populates="parent", foreign_keys=[parent_comment_id])
     parent = relationship("Comment", back_populates="replies", remote_side="Comment.id")
+
+    # ─── 스키마 직렬화용 computed 속성 ──────────────────────────────────────────
+    @property
+    def nickname(self) -> str:
+        return self.user.nickname if self.user else ""

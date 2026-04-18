@@ -9,8 +9,12 @@ Week 4 업그레이드:
   - POST /auth/logout — 쿠키 삭제
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from jose import JWTError
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -63,9 +67,16 @@ def signup(request: SignupRequest, db: Session = Depends(get_db)):
     - 비밀번호 bcrypt 해싱
     """
     try:
-        return auth_service.signup(db, request)
+        logger.info("signup attempt: email=%s nickname=%s", request.email, request.nickname)
+        result = auth_service.signup(db, request)
+        logger.info("signup success: id=%s", result.id)
+        return result
     except ValueError as e:
+        logger.warning("signup ValueError: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("signup unexpected error: %s", e)
+        raise
 
 
 @router.post("/login", response_model=LoginResponse)

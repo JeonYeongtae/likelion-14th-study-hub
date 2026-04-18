@@ -25,3 +25,13 @@ class Post(Base):
     comments = relationship("Comment", back_populates="post")
     likes = relationship("Like", back_populates="post")
     images = relationship("PostImage", back_populates="post", cascade="all, delete-orphan")  # Phase 3
+
+    # ─── 스키마 직렬화용 computed 속성 ──────────────────────────────────────────
+    @property
+    def nickname(self) -> str:
+        return self.user.nickname if self.user else ""
+
+    @property
+    def comment_count(self) -> int:
+        """댓글 + 대댓글 전체 합계"""
+        return len(self.comments)

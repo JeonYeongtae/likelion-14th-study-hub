@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.models.application import Application
 from app.repositories import application_repo, study_group_repo
 from app.schemas.application import ApplicationCreate, ApplicationUpdate
+from app.services import notification_service
 
 
 def apply(db: Session, user_id: int, group_id: int, request: ApplicationCreate):
@@ -36,7 +37,17 @@ def apply(db: Session, user_id: int, group_id: int, request: ApplicationCreate):
 
     existing = application_repo.get_application_by_group_and_user(db, group_id, user_id)
     if existing:
-        raise ValueError("이미 신청한 그룹입니다")
+        if existing.status == "rejected":
+            # 거절된 신청 → pending으로 재활성화 (UNIQUE 제약 유지, 기록 보존)
+            existing.status = "pending"
+            existing.message = request.message
+            result = application_repo.update_application(db, existing)
+            notification_service.create_application_notification(
+                db, group.leader_id, user_id, group.id, group.title
+            )
+            return result
+        else:
+            raise ValueError("이미 신청한 그룹입니다")
 
     new_app = Application(
         group_id=group_id,
@@ -44,7 +55,11 @@ def apply(db: Session, user_id: int, group_id: int, request: ApplicationCreate):
         status="pending",
         message=request.message,
     )
-    return application_repo.create_application(db, new_app)
+    result = application_repo.create_application(db, new_app)
+    notification_service.create_application_notification(
+        db, group.leader_id, user_id, group.id, group.title
+    )
+    return result
 
 
 def get_applications(db: Session, user_id: int, group_id: int):
@@ -89,5 +104,12 @@ def process_application(db: Session, user_id: int, application_id: int, request:
         if group.current_members >= group.max_members:
             group.status = "모집완료"
         study_group_repo.update_group(db, group)
+        notification_service.create_accepted_notification(
+            db, application.applicant_id, group.id, group.title
+        )
+    elif request.status == "rejected":
+        notification_service.create_rejected_notification(
+            db, application.applicant_id, group.id, group.title
+        )
 
     return application_repo.update_application(db, application)

@@ -15,6 +15,7 @@ from app.schemas.comment import CommentCreate, CommentUpdate
 from app.services import notification_service
 
 
+
 def get_comments(db: Session, post_id: int):
     """특정 게시글의 댓글 목록"""
     return comment_repo.get_comments_by_post(db, post_id)
@@ -42,6 +43,19 @@ def create_comment(db: Session, user_id: int, post_id: int, request: CommentCrea
         post_id=post_id,
         post_title=post.title,
     )
+
+    # 대댓글인 경우 — 부모 댓글 작성자에게 추가 알림
+    if request.parent_comment_id:
+        parent_comment = comment_repo.get_comment_by_id(db, request.parent_comment_id)
+        if parent_comment:
+            notification_service.create_reply_notification(
+                db,
+                comment_author_id=parent_comment.user_id,
+                replier_id=user_id,
+                post_author_id=post.user_id,
+                post_id=post_id,
+                post_title=post.title,
+            )
 
     return comment
 

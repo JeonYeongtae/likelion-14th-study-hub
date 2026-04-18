@@ -33,3 +33,5 @@ class User(Base):
     study_groups = relationship("StudyGroup", back_populates="leader")
     applications = relationship("Application", back_populates="applicant")
     notifications = relationship("Notification", back_populates="user")
+    chat_messages = relationship("ChatMessage", back_populates="sender")
+    chat_read_receipts = relationship("ChatReadReceipt", back_populates="user")

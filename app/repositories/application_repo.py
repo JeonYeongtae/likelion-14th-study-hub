@@ -23,6 +23,16 @@ def get_applications_by_group(db: Session, group_id: int):
     )
 
 
+def get_applications_by_user(db: Session, user_id: int):
+    """유저가 신청한 전체 목록 (최신순)"""
+    return (
+        db.query(Application)
+        .filter(Application.applicant_id == user_id)
+        .order_by(Application.created_at.desc())
+        .all()
+    )
+
+
 def get_application_by_group_and_user(db: Session, group_id: int, user_id: int):
     """특정 유저의 특정 그룹 신청 조회 (중복 방지)"""
     return db.query(Application).filter(
@@ -44,3 +54,9 @@ def update_application(db: Session, application: Application):
     db.commit()
     db.refresh(application)
     return application
+
+
+def delete_application(db: Session, application: Application):
+    """신청 삭제 (재신청 허용 시 기존 rejected 신청 제거용)"""
+    db.delete(application)
+    db.commit()

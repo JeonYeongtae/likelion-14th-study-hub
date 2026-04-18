@@ -31,6 +31,7 @@ class PostUpdate(BaseModel):
 class PostResponse(BaseModel):
     id: int
     user_id: int
+    nickname: str = ""          # 작성자 닉네임
     title: str
     content: str
     view_count: int | None
@@ -38,6 +39,9 @@ class PostResponse(BaseModel):
     updated_at: datetime | None
     is_edited: bool | None
     images: Optional[List[PostImageResponse]] = []
+    like_count: int = 0
+    is_liked: bool = False
+    comment_count: int = 0      # 댓글 + 대댓글 합계
 
     model_config = {"from_attributes": True}
 

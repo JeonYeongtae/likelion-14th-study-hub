@@ -59,6 +59,15 @@ def update_group(db: Session, user_id: int, group_id: int, request: StudyGroupUp
     if request.status is not None:
         group.status = request.status
 
+    # 자동 상태 동기화 — '종료'는 절대 자동 변경하지 않음
+    if group.status != "종료":
+        if group.current_members >= group.max_members:
+            # 정원 도달 → 자동 마감 (모집중 → 모집완료)
+            group.status = "모집완료"
+        elif request.max_members is not None and group.status == "모집완료":
+            # max_members를 늘려 여유가 생긴 경우에만 자동 재개 (모집완료 → 모집중)
+            group.status = "모집중"
+
     return study_group_repo.update_group(db, group)
 
 

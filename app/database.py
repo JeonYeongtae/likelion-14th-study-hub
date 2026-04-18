@@ -33,6 +33,12 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 load_dotenv(override=True)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise RuntimeError(
+        "[DB] DATABASE_URL 환경변수가 설정되지 않았습니다.\n"
+        ".env 파일에 DATABASE_URL=postgresql://... 을 추가해 주세요."
+    )
+
 # ──────────────────────────────────────────────
 # 2단계: SQLAlchemy 설정 (3개의 핵심 객체)
 #

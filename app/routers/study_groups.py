@@ -158,3 +158,23 @@ def get_applications(
         raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{group_id}/my-application", response_model=ApplicationResponse)
+def get_my_application(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    내 신청 현황 조회
+
+    GET /groups/{group_id}/my-application
+    - 신청 내역 없음 → 404
+    - 있음 → ApplicationResponse (status: pending / accepted / rejected)
+    """
+    from app.repositories import application_repo as _app_repo
+    app = _app_repo.get_application_by_group_and_user(db, group_id, current_user.id)
+    if not app:
+        raise HTTPException(status_code=404, detail="신청 내역이 없습니다")
+    return app

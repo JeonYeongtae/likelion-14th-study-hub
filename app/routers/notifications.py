@@ -25,6 +25,17 @@ def get_notifications(
     return notification_service.get_my_notifications(db, current_user.id)
 
 
+@router.get("/unread-count")
+def unread_count(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """읽지 않은 알림 수 (헤더 뱃지용)"""
+    notis = notification_service.get_my_notifications(db, current_user.id)
+    count = sum(1 for n in notis if not n.is_read)
+    return {"count": count}
+
+
 @router.patch("/{notification_id}/read", response_model=NotificationResponse)
 def mark_read(
     notification_id: int,
