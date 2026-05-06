@@ -4,7 +4,7 @@ Comment 모델 — comments 테이블
 parent_comment_id: 대댓글을 위한 자기 참조 FK (NULL이면 최상위 댓글)
 """
 
-from sqlalchemy import BigInteger, Column, Text, DateTime, ForeignKey
+from sqlalchemy import BigInteger, Boolean, Column, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -18,6 +18,7 @@ class Comment(Base):
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     parent_comment_id = Column(BigInteger, ForeignKey("comments.id"), nullable=True)
     content = Column(Text, nullable=False)
+    is_deleted = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=True)
 

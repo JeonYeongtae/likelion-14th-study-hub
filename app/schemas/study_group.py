@@ -6,7 +6,7 @@ Phase 5
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class StudyGroupCreate(BaseModel):
@@ -25,11 +25,32 @@ class StudyGroupUpdate(BaseModel):
 class ApplicationSummary(BaseModel):
     id: int
     applicant_id: int
+    applicant_nickname: str = ""
     status: str
     message: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_nickname(cls, obj):
+        if isinstance(obj, dict):
+            return obj
+        nickname = ""
+        try:
+            if obj.applicant is not None:
+                nickname = obj.applicant.nickname
+        except Exception:
+            pass
+        return {
+            'id': obj.id,
+            'applicant_id': obj.applicant_id,
+            'applicant_nickname': nickname,
+            'status': obj.status,
+            'message': obj.message,
+            'created_at': obj.created_at,
+        }
 
 
 class StudyGroupResponse(BaseModel):

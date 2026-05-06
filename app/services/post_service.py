@@ -44,7 +44,8 @@ def update_post(db: Session, user_id: int, post_id: int, request: PostUpdate):
         post.title = request.title
     if request.content is not None:
         post.content = request.content
-    post.is_edited = True
+    if request.mark_as_edited:
+        post.is_edited = True
     return post_repo.update_post(db, post)
 
 

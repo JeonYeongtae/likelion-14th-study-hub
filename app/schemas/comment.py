@@ -23,6 +23,7 @@ class CommentResponse(BaseModel):
     nickname: str = ""          # 작성자 닉네임
     parent_comment_id: int | None
     content: str
+    is_deleted: bool = False
     created_at: datetime
     updated_at: datetime | None
 

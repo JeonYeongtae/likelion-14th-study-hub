@@ -32,3 +32,21 @@ def mark_as_read(db: Session, notification: Notification):
     db.commit()
     db.refresh(notification)
     return notification
+
+
+def delete_notification(db: Session, notification: Notification):
+    db.delete(notification)
+    db.commit()
+
+
+def delete_all_notifications(db: Session, user_id: int):
+    db.query(Notification).filter(Notification.user_id == user_id).delete()
+    db.commit()
+
+
+def delete_read_notifications(db: Session, user_id: int):
+    db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.is_read == True,
+    ).delete()
+    db.commit()

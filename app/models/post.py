@@ -33,5 +33,5 @@ class Post(Base):
 
     @property
     def comment_count(self) -> int:
-        """댓글 + 대댓글 전체 합계"""
-        return len(self.comments)
+        """댓글 + 대댓글 전체 합계 (soft-deleted 제외)"""
+        return sum(1 for c in self.comments if not c.is_deleted)

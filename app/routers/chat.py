@@ -46,18 +46,39 @@ class ConnectionManager:
     def __init__(self):
         # group_id → list[(websocket, user_id, nickname)]
         self._rooms: dict[int, list[tuple[WebSocket, int, str]]] = {}
+        # group_id → set of user_ids who have ever connected this server session
+        self._ever_connected: dict[int, set[int]] = {}
 
-    async def connect(self, ws: WebSocket, group_id: int, user_id: int, nickname: str):
+    async def connect(self, ws: WebSocket, group_id: int, user_id: int, nickname: str) -> bool:
+        """WebSocket 연결 수락. 이 세션 내 첫 연결이면 True 반환."""
         await ws.accept()
         if group_id not in self._rooms:
             self._rooms[group_id] = []
         self._rooms[group_id].append((ws, user_id, nickname))
+
+        if group_id not in self._ever_connected:
+            self._ever_connected[group_id] = set()
+        is_first = user_id not in self._ever_connected[group_id]
+        self._ever_connected[group_id].add(user_id)
+        return is_first
 
     def disconnect(self, ws: WebSocket, group_id: int):
         if group_id in self._rooms:
             self._rooms[group_id] = [
                 (w, uid, nick) for w, uid, nick in self._rooms[group_id] if w is not ws
             ]
+
+    def disconnect_user(self, group_id: int, user_id: int):
+        """특정 유저의 해당 그룹 WebSocket 연결을 모두 제거."""
+        if group_id in self._rooms:
+            self._rooms[group_id] = [
+                (w, uid, nick) for w, uid, nick in self._rooms[group_id] if uid != user_id
+            ]
+
+    def reset_join_state(self, group_id: int, user_id: int):
+        """명시적 퇴장 후 재입장 시 입장 메시지가 다시 표시되도록 초기화."""
+        if group_id in self._ever_connected:
+            self._ever_connected[group_id].discard(user_id)
 
     async def broadcast(self, group_id: int, payload: dict):
         """그룹 전원에게 메시지 전송. 끊긴 소켓은 조용히 제거."""
@@ -118,12 +139,13 @@ async def chat_ws(
             await websocket.close(code=4003)
             return
 
-        # ── 3. 연결 수락 & 입장 알림 ──────────────────────────────────────────
-        await manager.connect(websocket, group_id, user_id, user.nickname)
-        await manager.broadcast(group_id, {
-            "type": "system",
-            "content": f"{user.nickname}님이 입장했습니다.",
-        })
+        # ── 3. 연결 수락 & 첫 입장 알림 ──────────────────────────────────────
+        is_first = await manager.connect(websocket, group_id, user_id, user.nickname)
+        if is_first:
+            await manager.broadcast(group_id, {
+                "type": "system",
+                "content": f"{user.nickname}님이 입장했습니다.",
+            })
 
         # ── 4. 메시지 루프 ────────────────────────────────────────────────────
         try:
@@ -161,10 +183,6 @@ async def chat_ws(
 
         except WebSocketDisconnect:
             manager.disconnect(websocket, group_id)
-            await manager.broadcast(group_id, {
-                "type": "system",
-                "content": f"{user.nickname}님이 퇴장했습니다.",
-            })
     finally:
         db.close()
 
@@ -172,6 +190,38 @@ async def chat_ws(
 # ─────────────────────────────────────────────────────────────────────────────
 # REST 엔드포인트
 # ─────────────────────────────────────────────────────────────────────────────
+
+@router.delete("/groups/{group_id}/chat/leave", status_code=200)
+async def leave_chat(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    채팅방 나가기 = 스터디 그룹 영구 탈퇴
+
+    - 확정 멤버(accepted)만 가능, 조장 불가
+    - Application 레코드 삭제 + current_members 감소
+    - 그룹 status는 '종료' 유지 (재모집 상태로 복구되지 않음)
+    - 남은 멤버에게 퇴장 시스템 메시지 브로드캐스트
+    """
+    try:
+        nickname = current_user.nickname
+        chat_service.leave_chat_room(db, group_id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+    # WS 연결 정리 및 퇴장 메시지 브로드캐스트
+    manager.disconnect_user(group_id, current_user.id)
+    manager.reset_join_state(group_id, current_user.id)
+    await manager.broadcast(group_id, {
+        "type": "system",
+        "content": f"{nickname}님이 퇴장했습니다.",
+    })
+    return {"message": f"{nickname}님이 스터디 그룹에서 탈퇴했습니다."}
+
 
 @router.get("/groups/{group_id}/chat/info", response_model=ChatRoomInfoResponse)
 def get_room_info(

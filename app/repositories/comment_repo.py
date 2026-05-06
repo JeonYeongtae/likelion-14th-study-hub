@@ -32,5 +32,5 @@ def update_comment(db: Session, comment: Comment):
 
 
 def delete_comment(db: Session, comment: Comment):
-    db.delete(comment)
+    comment.is_deleted = True
     db.commit()

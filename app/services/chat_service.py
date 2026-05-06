@@ -194,6 +194,42 @@ def get_unread_count(db: Session, group_id: int, user_id: int) -> UnreadCountRes
     return UnreadCountResponse(group_id=group_id, unread_count=count)
 
 
+# ── 채팅방 나가기 (스터디 그룹 영구 탈퇴) ─────────────────────────────────────
+
+def leave_chat_room(db: Session, group_id: int, user_id: int) -> None:
+    """
+    채팅방 나가기 = 스터디 그룹 영구 탈퇴.
+
+    - 조장은 탈퇴 불가 (그룹 자체를 삭제해야 함)
+    - accepted Application 레코드 삭제
+    - current_members -= 1 (최솟값 1 보장)
+    - 그룹 status는 '종료' 그대로 유지 — 재모집 상태로 되돌리지 않음
+    """
+    group = db.query(StudyGroup).filter(StudyGroup.id == group_id).first()
+    if not group:
+        raise ValueError("존재하지 않는 스터디 그룹입니다")
+
+    if group.leader_id == user_id:
+        raise PermissionError("조장은 채팅방 나가기로 탈퇴할 수 없습니다. 그룹을 삭제해 주세요.")
+
+    app = db.query(Application).filter(
+        Application.group_id == group_id,
+        Application.applicant_id == user_id,
+        Application.status == "accepted",
+    ).first()
+    if not app:
+        raise PermissionError("해당 그룹의 확정 멤버가 아닙니다")
+
+    db.delete(app)
+
+    # current_members 감소 — 1 미만으로 내려가지 않도록 보호
+    if group.current_members > 1:
+        group.current_members -= 1
+
+    # status는 '종료'를 절대 변경하지 않음 (재모집 방지)
+    db.commit()
+
+
 # ── 내 채팅방 목록 ──────────────────────────────────────────────────────────────
 
 def get_my_chat_rooms(db: Session, user_id: int) -> list[dict]:

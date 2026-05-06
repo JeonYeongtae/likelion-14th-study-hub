@@ -26,16 +26,17 @@ def _get_supabase_client():
     return create_client(url, key)
 
 
-BUCKET = "post-images"
+BUCKET = "post_images"
 
 
-def upload_image(db: Session, user_id: int, post_id: int, file: UploadFile):
+def upload_image(db: Session, user_id: int, post_id: int, file: UploadFile, is_representative: bool = False):
     """
     이미지 업로드
 
     1. 게시글 존재 및 권한 확인
     2. Supabase Storage에 파일 업로드
     3. URL을 post_images 테이블에 저장
+    4. is_representative=True 이면 해당 게시글의 대표 이미지로 지정
     """
     post = post_repo.get_post_by_id(db, post_id)
     if not post:
@@ -53,8 +54,31 @@ def upload_image(db: Session, user_id: int, post_id: int, file: UploadFile):
 
     public_url = supabase.storage.from_(BUCKET).get_public_url(file_path)
 
-    image = PostImage(post_id=post_id, image_url=public_url)
-    return post_image_repo.create_image(db, image)
+    image = PostImage(post_id=post_id, image_url=public_url, is_representative=False)
+    created = post_image_repo.create_image(db, image)
+
+    if is_representative:
+        post_image_repo.set_representative(db, post_id, created.id)
+        db.refresh(created)
+
+    return created
+
+
+def set_representative(db: Session, user_id: int, post_id: int, image_id: int):
+    """대표 이미지 변경"""
+    post = post_repo.get_post_by_id(db, post_id)
+    if not post:
+        raise ValueError("게시글을 찾을 수 없습니다")
+    if post.user_id != user_id:
+        raise PermissionError("본인의 게시글만 수정할 수 있습니다")
+
+    image = post_image_repo.get_image_by_id(db, image_id)
+    if not image or image.post_id != post_id:
+        raise ValueError("이미지를 찾을 수 없습니다")
+
+    post_image_repo.set_representative(db, post_id, image_id)
+    db.refresh(image)
+    return image
 
 
 def delete_image(db: Session, user_id: int, post_id: int, image_id: int):

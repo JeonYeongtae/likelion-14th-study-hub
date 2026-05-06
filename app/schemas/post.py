@@ -13,6 +13,7 @@ from pydantic import BaseModel
 class PostImageResponse(BaseModel):
     id: int
     image_url: str
+    is_representative: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -26,6 +27,7 @@ class PostCreate(BaseModel):
 class PostUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
+    mark_as_edited: bool = True
 
 
 class PostResponse(BaseModel):

@@ -29,6 +29,26 @@ def mark_read(db: Session, user_id: int, notification_id: int):
     return notification_repo.mark_as_read(db, noti)
 
 
+def delete_notification(db: Session, user_id: int, notification_id: int):
+    """알림 단건 삭제 (본인 알림만)"""
+    noti = notification_repo.get_notification_by_id(db, notification_id)
+    if not noti:
+        raise ValueError("알림을 찾을 수 없습니다")
+    if noti.user_id != user_id:
+        raise PermissionError("본인의 알림만 삭제할 수 있습니다")
+    notification_repo.delete_notification(db, noti)
+
+
+def delete_all_notifications(db: Session, user_id: int):
+    """전체 알림 삭제"""
+    notification_repo.delete_all_notifications(db, user_id)
+
+
+def delete_read_notifications(db: Session, user_id: int):
+    """읽음 알림만 삭제"""
+    notification_repo.delete_read_notifications(db, user_id)
+
+
 def create_comment_notification(db: Session, post_author_id: int, commenter_id: int, post_id: int, post_title: str):
     """
     댓글 알림 생성

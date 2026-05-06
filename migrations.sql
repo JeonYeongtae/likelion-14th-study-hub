@@ -127,6 +127,16 @@ CREATE TABLE IF NOT EXISTS chat_read_receipts (
 );
 
 -- ==========================================================
+-- comments 소프트 딜리트: is_deleted 컬럼 추가
+-- ==========================================================
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT false;
+
+-- ==========================================================
+-- post_images: 대표 이미지 여부 컬럼 추가
+-- ==========================================================
+ALTER TABLE post_images ADD COLUMN IF NOT EXISTS is_representative BOOLEAN NOT NULL DEFAULT false;
+
+-- ==========================================================
 -- 명세서: 탈퇴 30일 후 하드딜리트 — pg_cron 설정
 -- Supabase 대시보드 > Database > Extensions 에서 pg_cron 활성화 후 실행
 -- ==========================================================

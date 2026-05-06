@@ -6,7 +6,7 @@ Phase 3: 게시글 이미지 첨부
 - 파일 자체는 DB에 저장하지 않음
 """
 
-from sqlalchemy import BigInteger, Column, Text, DateTime, ForeignKey
+from sqlalchemy import BigInteger, Boolean, Column, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -18,6 +18,7 @@ class PostImage(Base):
     id = Column(BigInteger, primary_key=True)
     post_id = Column(BigInteger, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
     image_url = Column(Text, nullable=False)
+    is_representative = Column(Boolean, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # Relationships
